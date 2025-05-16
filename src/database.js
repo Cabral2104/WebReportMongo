@@ -1,16 +1,19 @@
 // src/database.js
 
-require('dotenv').config();  // Asegúrate de que las variables de entorno se carguen correctamente
-const { Pool } = require('pg');  // Requiere el paquete de PostgreSQL
+const mongoose = require('mongoose');
+require('dotenv').config();
 
-// Construir la URL de conexión con los datos del archivo .env
-const pool = new Pool({
-  host: process.env.DB_HOST,  // localhost
-  port: process.env.DB_PORT,  // 5432
-  user: process.env.DB_USER,  // postgres
-  password: process.env.DB_PASSWORD,  // PáginaWeb
-  database: process.env.DB_NAME,  // portal_reportes
-});
+const conectarDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log('Conectado a MongoDB Atlas');
+  } catch (error) {
+    console.error('Error al conectar a MongoDB Atlas:', error.message);
+    process.exit(1);
+  }
+};
 
-// Exportar la conexión para que se pueda usar en otros archivos
-module.exports = pool;
+module.exports = conectarDB;

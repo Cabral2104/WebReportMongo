@@ -9,6 +9,9 @@ const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const path = require('path');
 const passport = require('passport');
+const conectarDB = require('./database');
+conectarDB(); // Conecta a MongoDB al iniciar
+
 
 // 🔹 Inicializar app
 const app = express();
@@ -45,7 +48,7 @@ app.use(express.static(path.join(__dirname, '../')));
 const authRoutes = require('./routes/authRoutes'); // Asegúrate de que el archivo sea `authRoutes.js`
 
 const reportesRoutes = require('./routes/reportesRoutes');
-app.use('/reportes', reportesRoutes);
+app.use('/', reportesRoutes);
 
 
 app.use('/auth', authRoutes); // Ruta base para autenticación

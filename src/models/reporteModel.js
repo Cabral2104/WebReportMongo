@@ -1,26 +1,25 @@
 // src/models/reporteModel.js
-const { Pool } = require('pg');
-const pool = new Pool({
-  user:     process.env.DB_USER,
-  host:     process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port:     5432,
+const mongoose = require('mongoose');
+
+const reporteSchema = new mongoose.Schema({
+  usuario_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
+  titulo: { type: String, required: true },
+  descripcion: { type: String, required: true },
+  categoria: { type: String, required: true },
+  direccion: { type: String, required: true },
+  latitud: { type: Number, required: true },
+  longitud: { type: Number, required: true },
+  imagen: { type: String }, // base64
+  estado: { type: String, enum: ['pendiente', 'en_progreso', 'resuelto'], default: 'pendiente' },
+  enviado_en: { type: Date, default: Date.now },
+  actualizado_en: { type: Date, default: Date.now },
 });
 
-/**
- * Inserta un reporte con título y descripción.
- * @param {number} usuario_id
- * @param {string} titulo
- * @param {string} descripcion
- * @param {string} categoria
- * @param {string} direccion
- * @param {number} latitud
- * @param {number} longitud
- * @param {string|null} imagenBase64
- * @returns {Promise<Object>} reporte insertado
- */
-const crearReporteEnDB = async (
+const Reporte = mongoose.model('Reporte', reporteSchema);
+
+module.exports = Reporte;
+
+const crearReporte = async ({
   usuario_id,
   titulo,
   descripcion,
@@ -29,18 +28,9 @@ const crearReporteEnDB = async (
   latitud,
   longitud,
   imagenBase64
-) => {
+}) => {
   try {
-    const query = `
-      INSERT INTO reportes
-        (usuario_id, titulo, descripcion, categoria, direccion,
-        latitud, longitud, imagen, estado, enviado_en, actualizado_en)
-      VALUES
-        ($1, $2, $3, $4, $5, $6, $7, $8, 'pendiente', NOW(), NOW())
-      RETURNING *;
-    `;
-
-    const values = [
+    const nuevoReporte = new Reporte({
       usuario_id,
       titulo,
       descripcion,
@@ -48,54 +38,28 @@ const crearReporteEnDB = async (
       direccion,
       latitud,
       longitud,
-      imagenBase64
-    ];
+      imagen: imagenBase64
+    });
 
-    const result = await pool.query(query, values);
-    return result.rows[0];
+    await nuevoReporte.save();
+    return nuevoReporte;
   } catch (error) {
-    console.error("Error al insertar reporte en DB:", error);
+    console.error('❌ Error al crear el reporte:', error);
     throw error;
   }
 };
-const obtenerReportesPorUsuarioEnDB = async (usuario_id) => {
-  const query = `
-    SELECT id, titulo, categoria, direccion, estado, enviado_en
-    FROM reportes
-    WHERE usuario_id = $1
-    ORDER BY enviado_en DESC;
-  `;
-  const { rows } = await pool.query(query, [usuario_id]);
-  return rows;
+
+const obtenerReportesPorUsuario = async (usuario_id) => {
+  return await Reporte.find({ usuario_id }).sort({ enviado_en: -1 });
 };
 
-/**
- * Obtiene un reporte por su ID.
- * @param {number} id
- * @returns {Promise<Object|null>}
- */
-const obtenerReportePorIdEnDB = async (id) => {
-  const query = `
-    SELECT id, usuario_id, titulo, descripcion, categoria,
-    direccion, latitud, longitud, imagen, estado, enviado_en, actualizado_en
-    FROM reportes
-    WHERE id = $1
-    LIMIT 1;
-  `;
-  const { rows } = await pool.query(query, [id]);
-
-  if (rows.length === 0) return null;
-
-  const reporte = rows[0];
-
-  // Asegurarse de que latitud y longitud sean números
-  reporte.latitud = parseFloat(reporte.latitud);
-  reporte.longitud = parseFloat(reporte.longitud);
-
-  return reporte;
+const obtenerReportePorId = async (id) => {
+  const reporte = await Reporte.findById(id);
+  return reporte ? reporte.toObject() : null;
 };
 
-
-module.exports = { crearReporteEnDB, obtenerReportesPorUsuarioEnDB, obtenerReportePorIdEnDB };
-
-
+module.exports = {
+  crearReporte,
+  obtenerReportesPorUsuario,
+  obtenerReportePorId
+};

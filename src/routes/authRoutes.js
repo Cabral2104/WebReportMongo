@@ -1,9 +1,8 @@
-// src/routes/authRoutes.js
-const express        = require('express');
-const passport       = require('passport');
-const router         = express.Router();
+const express = require('express');
+const passport = require('passport');
+const router = express.Router();
 const authController = require('../controllers/authController');
-const verificarToken = require('../middlewares/authMiddleware'); // Importa el middleware
+const verificarToken = require('../middlewares/authMiddleware');
 
 // Ruta para registrar usuario (pública)
 router.post('/registro', authController.register);
@@ -13,33 +12,29 @@ router.post('/login', authController.login);
 
 // Rutas de recuperación de contraseña (públicas)
 router.post('/forgot-password', authController.forgotPassword);
-router.post('/reset-password',  authController.resetPassword);
+router.post('/reset-password', authController.resetPassword);
 
 // Ruta protegida: ejemplo de perfil de usuario
 router.get('/perfil', verificarToken, (req, res) => {
-  // Esta ruta solo será accesible si el usuario tiene un token válido
   res.json({
     mensaje: 'Perfil del usuario',
-    usuario: req.user // Aquí se accede a los datos decodificados del usuario
+    usuario: req.user
   });
 });
 
 // 🟢 Rutas de autenticación con Google
-
-// Iniciar login con Google
 router.get('/google', passport.authenticate('google', {
   scope: ['profile', 'email']
 }));
 
-// Callback luego de autenticación con Google
 router.get('/google/callback',
   passport.authenticate('google', {
-    failureRedirect: '/pages/login.html',  // Redirigir en caso de fallo
-    successRedirect: '/'                   // Redirigir al index o dashboard tras login exitoso
+    failureRedirect: '/pages/login.html',
+    successRedirect: '/'
   })
 );
 
-// Ruta para obtener datos del usuario actual autenticado (usado en frontend)
+// Ruta para obtener datos del usuario actual autenticado
 router.get('/usuario', (req, res) => {
   if (req.isAuthenticated()) {
     const usuario = req.user;
@@ -48,7 +43,7 @@ router.get('/usuario', (req, res) => {
       usuario: {
         id: usuario.id,
         nombre: usuario.nombre,
-        // Agrega otros campos necesarios, pero no la contraseña ni otros datos sensibles
+        // Agrega otros campos necesarios, excluyendo datos sensibles
       }
     });
   } else {
@@ -63,7 +58,7 @@ router.get('/logout', (req, res) => {
       return res.status(500).json({ message: 'Error al cerrar sesión' });
     }
     req.session.destroy(() => {
-      res.redirect('/pages/login.html');  // Redirigir después de logout
+      res.redirect('/pages/login.html');
     });
   });
 });
